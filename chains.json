@@ -4,11 +4,12 @@
       "id": 1771088105258,
       "slug": "karrot_page",
       "note": "karrot_page",
-      "url": "https://karrot.world/#/welcome",
+      "url": "https://karrot.world/",
       "created": "2026-02-14T16:55:05.258Z",
-      "visits": 0
+      "visits": 0,
+      "updated": "2026-02-14T17:31:53.477Z"
     }
   ],
-  "exported": "2026-02-14T17:22:34.270Z",
+  "exported": "2026-02-14T17:31:56.368Z",
   "version": "1.0"
 }
