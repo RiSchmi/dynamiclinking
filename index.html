@@ -160,6 +160,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        
+        #lock-screen.hidden {
+            display: none;
         }
     </style>
 </head>
@@ -298,9 +303,15 @@
         function checkPassword() {
             const input = document.getElementById('password-input').value;
             if (input === '2024') {
-                document.getElementById('lock-screen').style.opacity = '0';
+                const lockScreen = document.getElementById('lock-screen');
+                
+                // Fade out
+                lockScreen.style.opacity = '0';
+                lockScreen.style.pointerEvents = 'none'; // CRITICAL FIX: Allow clicks to pass through immediately
+                
+                // Wait for transition then fully remove
                 setTimeout(() => {
-                    document.getElementById('lock-screen').classList.add('hidden');
+                    lockScreen.classList.add('hidden');
                     document.getElementById('app').classList.remove('hidden');
                     loadChains();
                 }, 300);
