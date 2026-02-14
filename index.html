@@ -133,6 +133,14 @@
             animation: slideIn 0.5s ease-out forwards;
         }
 
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             transition: all 0.3s;
@@ -165,6 +173,32 @@
         
         #lock-screen.hidden {
             display: none;
+        }
+
+        /* Sync Badge */
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .sync-synced {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .sync-local {
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        .sync-loading {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border: 1px solid rgba(99, 102, 241, 0.2);
         }
     </style>
 </head>
@@ -209,9 +243,15 @@
                         <p class="text-xs text-slate-400">Dynamic QR Management</p>
                     </div>
                 </div>
-                <button onclick="lock()" class="text-slate-400 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                </button>
+                <div class="flex items-center gap-3">
+                    <div id="sync-status" class="sync-badge sync-loading">
+                        <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+                        <span>Loading...</span>
+                    </div>
+                    <button onclick="lock()" class="text-slate-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -245,6 +285,30 @@
                     </form>
                 </div>
 
+                <!-- Sync Panel -->
+                <div class="glass-card rounded-2xl p-6 animate-slide-in">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </span>
+                        GitHub Sync
+                    </h2>
+                    
+                    <div class="space-y-3">
+                        <p class="text-sm text-slate-400">Export your changes and commit <code class="bg-slate-800 px-2 py-0.5 rounded text-xs">chains.json</code> to GitHub to make them live for everyone.</p>
+                        
+                        <button onclick="exportChains()" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            Export chains.json
+                        </button>
+
+                        <button onclick="reloadFromGitHub()" class="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            Reload from GitHub
+                        </button>
+                    </div>
+                </div>
+
                 <!-- QR Preview Panel -->
                 <div id="qr-panel" class="glass-card rounded-2xl p-6 hidden animate-slide-in">
                     <h2 class="text-lg font-semibold mb-4">QR Code Studio</h2>
@@ -264,7 +328,7 @@
                             <div class="flex gap-2">
                                 <button onclick="downloadQR()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    Download SVG
+                                    Download PNG
                                 </button>
                             </div>
                         </div>
@@ -293,9 +357,17 @@
     </div>
 
     <script>
-        // --- State Management ---
+        // --- Configuration ---
+        const GITHUB_REPO = 'RiSchmi/dynamiclinking';
+        const GITHUB_BRANCH = 'main';
+        const CHAINS_FILE = 'chains.json';
+        const GITHUB_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${CHAINS_FILE}`;
+        
         const STORAGE_KEY = 'aish_link_chains';
+        
+        // --- State Management ---
         let chains = [];
+        let githubChains = [];
         let currentQRSlug = null;
         let qrCodeObj = null;
 
@@ -304,16 +376,18 @@
             const input = document.getElementById('password-input').value;
             if (input === '2024') {
                 const lockScreen = document.getElementById('lock-screen');
+                const app = document.getElementById('app');
                 
-                // Fade out
+                // Immediately show app and load data
+                app.classList.remove('hidden');
+                loadChains();
+                
+                // Then fade out lock screen
                 lockScreen.style.opacity = '0';
-                lockScreen.style.pointerEvents = 'none'; // CRITICAL FIX: Allow clicks to pass through immediately
                 
-                // Wait for transition then fully remove
+                // After transition, fully remove lock screen
                 setTimeout(() => {
-                    lockScreen.classList.add('hidden');
-                    document.getElementById('app').classList.remove('hidden');
-                    loadChains();
+                    lockScreen.style.display = 'none';
                 }, 300);
             } else {
                 document.getElementById('error-msg').classList.remove('hidden');
@@ -341,16 +415,75 @@
             document.getElementById('slug-preview').textContent = slug || 'your-slug-here';
         }
 
+        // --- Sync Status ---
+        function updateSyncStatus() {
+            const statusEl = document.getElementById('sync-status');
+            const localJSON = JSON.stringify(chains.sort((a, b) => a.id - b.id));
+            const githubJSON = JSON.stringify(githubChains.sort((a, b) => a.id - b.id));
+            
+            if (localJSON === githubJSON) {
+                statusEl.className = 'sync-badge sync-synced';
+                statusEl.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-current"></div>
+                    <span>Synced</span>
+                `;
+            } else {
+                statusEl.className = 'sync-badge sync-local';
+                statusEl.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-current"></div>
+                    <span>Local changes</span>
+                `;
+            }
+        }
+
         // --- Chain Management ---
-        function loadChains() {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            chains = stored ? JSON.parse(stored) : [];
+        async function loadChains() {
+            const statusEl = document.getElementById('sync-status');
+            statusEl.className = 'sync-badge sync-loading';
+            statusEl.innerHTML = `
+                <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+                <span>Loading...</span>
+            `;
+
+            try {
+                // Fetch from GitHub
+                const response = await fetch(GITHUB_RAW_URL + '?t=' + Date.now());
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    githubChains = data.chains || [];
+                    
+                    // Check if we have local changes
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    if (stored) {
+                        chains = JSON.parse(stored);
+                    } else {
+                        // First load, use GitHub data
+                        chains = [...githubChains];
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
+                    }
+                } else {
+                    // chains.json doesn't exist yet - start fresh
+                    githubChains = [];
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    chains = stored ? JSON.parse(stored) : [];
+                }
+            } catch (error) {
+                console.error('Error loading from GitHub:', error);
+                // Fallback to localStorage
+                const stored = localStorage.getItem(STORAGE_KEY);
+                chains = stored ? JSON.parse(stored) : [];
+                githubChains = [];
+            }
+
             renderChains();
+            updateSyncStatus();
         }
 
         function saveChains() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
             renderChains();
+            updateSyncStatus();
         }
 
         function handleCreate(e) {
@@ -403,6 +536,54 @@
                 if (currentQRSlug === chain.slug) {
                     showQRPanel(chain.slug); // Refresh QR
                 }
+            }
+        }
+
+        // --- GitHub Sync Functions ---
+        function exportChains() {
+            const data = {
+                chains: chains,
+                exported: new Date().toISOString(),
+                version: "1.0"
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = CHAINS_FILE;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            alert('Downloaded chains.json!\n\nNext steps:\n1. Commit this file to your GitHub repo\n2. The changes will be live immediately');
+        }
+
+        async function reloadFromGitHub() {
+            if (!confirm('This will reload chains from GitHub and discard local changes. Continue?')) {
+                return;
+            }
+
+            const statusEl = document.getElementById('sync-status');
+            statusEl.className = 'sync-badge sync-loading';
+            statusEl.innerHTML = `
+                <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+                <span>Reloading...</span>
+            `;
+
+            try {
+                const response = await fetch(GITHUB_RAW_URL + '?t=' + Date.now());
+                if (response.ok) {
+                    const data = await response.json();
+                    chains = data.chains || [];
+                    githubChains = [...chains];
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
+                    renderChains();
+                    updateSyncStatus();
+                } else {
+                    alert('Could not load from GitHub. Make sure chains.json exists in your repo.');
+                }
+            } catch (error) {
+                alert('Error loading from GitHub: ' + error.message);
             }
         }
 
@@ -508,13 +689,10 @@
             const ctx = canvas.getContext('2d');
             const img = new Image();
             
-            // Add white background for PNG export (optional, but good for compatibility)
-            // For true transparency, we'd need to modify the SVG rect fill
-            
             img.onload = function() {
                 canvas.width = 1000;
                 canvas.height = 1000;
-                ctx.fillStyle = '#ffffff'; // Background
+                ctx.fillStyle = '#ffffff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
@@ -535,11 +713,12 @@
             const id = params.get('id');
             
             if (id) {
+                // Use current chains for redirect (will be loaded from GitHub)
                 const chain = chains.find(c => c.slug === id);
                 if (chain) {
                     // Increment visits
                     chain.visits++;
-                    saveChains();
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
                     
                     // Instant redirect
                     window.location.replace(chain.url);
@@ -558,8 +737,20 @@
         }
 
         // --- Initialization ---
-        window.onload = function() {
-            loadChains();
+        window.onload = async function() {
+            // Load chains from GitHub first for redirect
+            try {
+                const response = await fetch(GITHUB_RAW_URL + '?t=' + Date.now());
+                if (response.ok) {
+                    const data = await response.json();
+                    chains = data.chains || [];
+                }
+            } catch (e) {
+                // Fallback to localStorage
+                const stored = localStorage.getItem(STORAGE_KEY);
+                chains = stored ? JSON.parse(stored) : [];
+            }
+
             handleRedirect();
             
             // Enter key on password
