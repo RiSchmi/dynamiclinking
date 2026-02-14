@@ -1,5 +1,14 @@
 {
-  "chains": [],
-  "exported": "2026-02-14T16:47:54.535Z",
+  "chains": [
+    {
+      "id": 1771088105258,
+      "slug": "karrot_page",
+      "note": "karrot_page",
+      "url": "https://karrot.world/#/welcome",
+      "created": "2026-02-14T16:55:05.258Z",
+      "visits": 0
+    }
+  ],
+  "exported": "2026-02-14T16:56:22.650Z",
   "version": "1.0"
 }
