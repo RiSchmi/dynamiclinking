@@ -1,22 +1,5 @@
 {
-  "chains": [
-    {
-      "id": 1771108134291,
-      "slug": "kimi",
-      "note": "kimi",
-      "url": "https://en.wikipedia.org/wiki/Kimi_(chatbot)",
-      "created": "2026-02-14T22:28:54.291Z",
-      "visits": 0
-    },
-    {
-      "id": 1771108225086,
-      "slug": "ai",
-      "note": "AI",
-      "url": "https://github.com/Sumanth077/ai-engineering-toolkit",
-      "created": "2026-02-14T22:30:25.086Z",
-      "visits": 0
-    }
-  ],
-  "exported": "2026-02-14T22:30:27.883Z",
+  "chains": [],
+  "exported": "2026-02-14T22:50:33.590Z",
   "version": "1.0"
 }
