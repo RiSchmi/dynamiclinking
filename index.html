@@ -509,12 +509,13 @@
 
             try {
                 const response = await fetch(
-                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?ref=${GITHUB_BRANCH}`,
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?ref=${GITHUB_BRANCH}&_=${Date.now()}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${GITHUB_TOKEN}`,
                             'Accept': 'application/vnd.github.v3+json'
-                        }
+                        },
+                        cache: 'no-store'
                     }
                 );
                 
@@ -522,27 +523,19 @@
                     const fileData = await response.json();
                     const content = atob(fileData.content);
                     const data = JSON.parse(content);
-                    const githubChains = data.chains || [];
-                    
-                    // Load local chains
-                    const stored = localStorage.getItem(STORAGE_KEY);
-                    if (stored) {
-                        chains = JSON.parse(stored);
-                    } else {
-                        // First load, use GitHub data
-                        chains = [...githubChains];
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
-                    }
+                    chains = data.chains || [];
+                    githubChains = [...chains];
+                    console.log('Loaded from GitHub:', chains.length, 'chains');
                 } else if (response.status === 404) {
                     // File doesn't exist yet - start fresh
-                    const stored = localStorage.getItem(STORAGE_KEY);
-                    chains = stored ? JSON.parse(stored) : [];
+                    chains = [];
+                    githubChains = [];
+                    console.log('No chains.json in GitHub yet');
                 }
             } catch (error) {
                 console.error('Error loading from GitHub:', error);
-                // Fallback to localStorage
-                const stored = localStorage.getItem(STORAGE_KEY);
-                chains = stored ? JSON.parse(stored) : [];
+                chains = [];
+                githubChains = [];
             }
 
             renderChains();
@@ -550,7 +543,7 @@
         }
 
         function saveChains() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
+            // No localStorage - chains only exist in memory until published to GitHub
             renderChains();
             updateSyncStatus();
         }
@@ -770,7 +763,7 @@
         }
 
         async function reloadFromGitHub() {
-            if (!confirm('Reload from GitHub and discard local changes?')) {
+            if (!confirm('Reload from GitHub and discard unsaved changes?')) {
                 return;
             }
 
@@ -783,12 +776,13 @@
 
             try {
                 const response = await fetch(
-                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?ref=${GITHUB_BRANCH}`,
+                    `https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?ref=${GITHUB_BRANCH}&_=${Date.now()}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${GITHUB_TOKEN}`,
                             'Accept': 'application/vnd.github.v3+json'
-                        }
+                        },
+                        cache: 'no-store'
                     }
                 );
                 
@@ -798,7 +792,6 @@
                     const data = JSON.parse(content);
                     chains = data.chains || [];
                     githubChains = [...chains];
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
                     renderChains();
                     updateSyncStatus();
                 } else {
@@ -996,15 +989,16 @@
             const id = params.get('id');
             
             if (id) {
-                // Redirect mode
+                // Redirect mode - fetch fresh from GitHub
                 try {
                     const response = await fetch(
-                        `https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?ref=${GITHUB_BRANCH}`,
+                        `https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?ref=${GITHUB_BRANCH}&_=${Date.now()}`,
                         {
                             headers: {
                                 'Authorization': `Bearer ${GITHUB_TOKEN}`,
                                 'Accept': 'application/vnd.github.v3+json'
-                            }
+                            },
+                            cache: 'no-store'
                         }
                     );
                     
@@ -1013,11 +1007,14 @@
                         const content = atob(fileData.content);
                         const data = JSON.parse(content);
                         chains = data.chains || [];
+                        console.log('Loaded for redirect:', chains.length, 'chains');
+                    } else {
+                        console.log('No chains.json found (404)');
+                        chains = [];
                     }
                 } catch (e) {
                     console.error('Redirect fetch error:', e);
-                    const stored = localStorage.getItem(STORAGE_KEY);
-                    chains = stored ? JSON.parse(stored) : [];
+                    chains = [];
                 }
 
                 handleRedirect();
