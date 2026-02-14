@@ -1,15 +1,6 @@
 {
   "chains": [
     {
-      "id": 1771088105258,
-      "slug": "karrot_page",
-      "note": "karrot_page",
-      "url": "https://karrot.world/123",
-      "created": "2026-02-14T16:55:05.258Z",
-      "visits": 0,
-      "updated": "2026-02-14T17:48:49.560Z"
-    },
-    {
       "id": 1771108134291,
       "slug": "kimi",
       "note": "kimi",
@@ -18,6 +9,6 @@
       "visits": 0
     }
   ],
-  "exported": "2026-02-14T22:28:59.075Z",
+  "exported": "2026-02-14T22:29:29.944Z",
   "version": "1.0"
 }
