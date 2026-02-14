@@ -213,7 +213,7 @@
                 A!
             </div>
             <h2 class="text-2xl font-bold mb-2">A!FS Router</h2>
-            <p class="text-slate-400 mb-6">Enter the access key to manage links</p>
+            <p class="text-slate-400 mb-6">Enter the access key to manage links v3</p>
             
             <div class="space-y-4">
                 <div class="text-left">
@@ -476,6 +476,7 @@
             `;
 
             try {
+                log('=== PUBLISH TO GITHUB ===');
                 log('Publishing to GitHub...', { chainCount: chains.length, currentSha: githubSha });
 
                 // Prepare data
@@ -488,33 +489,65 @@
                 // Encode to base64
                 const content = btoa(JSON.stringify(exportData, null, 2));
                 
-                // Always fetch current state to get latest SHA
+                // ALWAYS fetch current file state to get the absolutely latest SHA
+                // This is critical - we need fresh SHA every time
+                log('Fetching current file state to get fresh SHA...');
+                let fileExists = false;
+                
                 try {
-                    log('Fetching current file state...');
-                    await fetchFromGitHub();
-                    log('Current SHA after fetch:', githubSha);
+                    const timestamp = Date.now();
+                    const response = await fetch(`${API_URL}?t=${timestamp}&_=${Math.random()}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${GITHUB_CONFIG.token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
+                        },
+                        cache: 'no-store'
+                    });
+
+                    log('GET response status:', response.status);
+
+                    if (response.status === 404) {
+                        log('File does NOT exist - this will be a CREATE operation');
+                        fileExists = false;
+                        githubSha = null;
+                    } else if (response.ok) {
+                        const data = await response.json();
+                        githubSha = data.sha;
+                        fileExists = true;
+                        log('File EXISTS - this will be an UPDATE operation');
+                        log('Fresh SHA retrieved:', githubSha);
+                    } else {
+                        throw new Error(`Failed to check file status: ${response.status}`);
+                    }
                 } catch (e) {
-                    log('Fetch failed (might be first commit):', e.message);
-                    // If 404, githubSha will be null which is correct for first commit
+                    log('Error checking file status:', e);
+                    throw new Error(`Cannot determine if file exists: ${e.message}`);
                 }
 
-                // Build request body - only include sha if we have one
+                // Build request body
                 const requestBody = {
                     message: `Update chains: ${chains.length} total (${new Date().toISOString()})`,
                     content: content,
                     branch: GITHUB_CONFIG.branch
                 };
                 
-                // Only add sha for updates (not for first commit)
-                if (githubSha) {
+                // Only include SHA for updates (when file exists)
+                if (fileExists && githubSha) {
                     requestBody.sha = githubSha;
-                    log('Including SHA in request (update mode)');
+                    log('✓ Including SHA in request (UPDATE mode)', githubSha);
+                } else if (fileExists && !githubSha) {
+                    throw new Error('File exists but SHA is missing - this should not happen');
                 } else {
-                    log('No SHA in request (create mode)');
+                    log('✓ No SHA in request (CREATE mode)');
                 }
 
                 // Push to GitHub
-                log('Sending PUT request to GitHub...', requestBody);
+                log('Sending PUT request to GitHub...');
+                log('Request body keys:', Object.keys(requestBody));
+                
                 const response = await fetch(API_URL, {
                     method: 'PUT',
                     headers: {
@@ -529,15 +562,16 @@
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    log('GitHub API PUT error:', errorData);
+                    log('GitHub API PUT error details:', errorData);
                     throw new Error(`GitHub API returned ${response.status}: ${errorData.message || JSON.stringify(errorData)}`);
                 }
 
                 const result = await response.json();
-                log('Successfully published to GitHub:', result);
+                log('✓ Successfully published to GitHub!');
+                log('Result:', result);
                 
                 githubSha = result.content.sha; // Update SHA for next commit
-                log('New SHA stored:', githubSha);
+                log('New SHA stored for next update:', githubSha);
                 
                 lastSyncData = JSON.stringify(exportData);
                 localStorage.setItem(SYNC_KEY, lastSyncData);
@@ -559,7 +593,11 @@
                 }, 2000);
                 
             } catch (error) {
-                log('Publish error:', error);
+                log('❌ Publish error:', error);
+                log('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
                 updateSyncStatus('error');
                 
                 btn.innerHTML = `
