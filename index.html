@@ -213,7 +213,7 @@
                 A!
             </div>
             <h2 class="text-2xl font-bold mb-2">A!FS Router</h2>
-            <p class="text-slate-400 mb-6">Enter the access key to manage links v2</p>
+            <p class="text-slate-400 mb-6">Enter the access key to manage links</p>
             
             <div class="space-y-4">
                 <div class="text-left">
@@ -415,6 +415,13 @@
 
                 log('GitHub API response status:', response.status);
 
+                // Handle 404 - file doesn't exist yet
+                if (response.status === 404) {
+                    log('File does not exist in GitHub yet (404)');
+                    githubSha = null;
+                    return { chains: [], version: "1.0" };
+                }
+
                 if (!response.ok) {
                     const errorText = await response.text();
                     log('GitHub API error:', errorText);
@@ -422,10 +429,11 @@
                 }
 
                 const data = await response.json();
-                log('GitHub API response data:', data);
+                log('GitHub API response data (raw):', data);
                 
                 // Store SHA for future updates
                 githubSha = data.sha;
+                log('Stored SHA for future updates:', githubSha);
                 
                 // Decode base64 content
                 const content = JSON.parse(atob(data.content));
@@ -437,6 +445,11 @@
                 return content;
             } catch (error) {
                 log('GitHub fetch error:', error);
+                
+                // Don't retry on 404
+                if (error.message && error.message.includes('404')) {
+                    throw error;
+                }
                 
                 // Retry logic with exponential backoff
                 if (retryCount < 3) {
@@ -463,7 +476,7 @@
             `;
 
             try {
-                log('Publishing to GitHub...', { chainCount: chains.length });
+                log('Publishing to GitHub...', { chainCount: chains.length, currentSha: githubSha });
 
                 // Prepare data
                 const exportData = {
@@ -475,17 +488,33 @@
                 // Encode to base64
                 const content = btoa(JSON.stringify(exportData, null, 2));
                 
-                // Fetch current SHA if we don't have it
-                if (!githubSha) {
-                    try {
-                        const current = await fetchFromGitHub();
-                        log('Fetched current SHA before update');
-                    } catch (e) {
-                        log('Could not fetch current SHA, might be first commit');
-                    }
+                // Always fetch current state to get latest SHA
+                try {
+                    log('Fetching current file state...');
+                    await fetchFromGitHub();
+                    log('Current SHA after fetch:', githubSha);
+                } catch (e) {
+                    log('Fetch failed (might be first commit):', e.message);
+                    // If 404, githubSha will be null which is correct for first commit
+                }
+
+                // Build request body - only include sha if we have one
+                const requestBody = {
+                    message: `Update chains: ${chains.length} total (${new Date().toISOString()})`,
+                    content: content,
+                    branch: GITHUB_CONFIG.branch
+                };
+                
+                // Only add sha for updates (not for first commit)
+                if (githubSha) {
+                    requestBody.sha = githubSha;
+                    log('Including SHA in request (update mode)');
+                } else {
+                    log('No SHA in request (create mode)');
                 }
 
                 // Push to GitHub
+                log('Sending PUT request to GitHub...', requestBody);
                 const response = await fetch(API_URL, {
                     method: 'PUT',
                     headers: {
@@ -493,26 +522,23 @@
                         'Accept': 'application/vnd.github.v3+json',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        message: `Update chains: ${chains.length} total (${new Date().toISOString()})`,
-                        content: content,
-                        branch: GITHUB_CONFIG.branch,
-                        sha: githubSha // Required for updates
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
-                log('GitHub API PUT response:', response.status);
+                log('GitHub API PUT response status:', response.status);
 
                 if (!response.ok) {
                     const errorData = await response.json();
                     log('GitHub API PUT error:', errorData);
-                    throw new Error(`GitHub API returned ${response.status}: ${errorData.message}`);
+                    throw new Error(`GitHub API returned ${response.status}: ${errorData.message || JSON.stringify(errorData)}`);
                 }
 
                 const result = await response.json();
                 log('Successfully published to GitHub:', result);
                 
                 githubSha = result.content.sha; // Update SHA for next commit
+                log('New SHA stored:', githubSha);
+                
                 lastSyncData = JSON.stringify(exportData);
                 localStorage.setItem(SYNC_KEY, lastSyncData);
                 
@@ -863,27 +889,43 @@
             const id = params.get('id');
             
             if (id) {
+                log('=== REDIRECT MODE ===');
                 log('Redirect requested for slug:', id);
                 
                 try {
                     // Fetch from GitHub with aggressive cache busting
+                    log('Fetching chains from GitHub for redirect...');
                     const data = await fetchFromGitHub();
+                    log('Received data from GitHub:', data);
+                    
+                    if (!data || !data.chains) {
+                        throw new Error('Invalid data structure from GitHub');
+                    }
+                    
+                    log('Looking for chain with slug:', id);
+                    log('Available slugs:', data.chains.map(c => c.slug));
+                    
                     const chain = data.chains.find(c => c.slug === id);
                     
                     if (chain) {
-                        log('Chain found, redirecting to:', chain.url);
+                        log('Chain found! Redirecting to:', chain.url);
                         
-                        // Increment visits in GitHub data (for next sync)
+                        // Note: Visit increment happens here but won't persist 
+                        // unless someone publishes the updated count later
                         chain.visits++;
                         
                         // Instant redirect
                         window.location.replace(chain.url);
                     } else {
                         log('Chain not found in GitHub data');
+                        log('Searched for:', id);
+                        log('Available:', data.chains.map(c => ({ slug: c.slug, url: c.url })));
                         show404(id);
                     }
                 } catch (error) {
                     log('Redirect error:', error);
+                    log('Error type:', error.constructor.name);
+                    log('Error message:', error.message);
                     show404(id, error.message);
                 }
             }
@@ -908,26 +950,52 @@
             
             // Load local chains first (instant UI)
             loadChains();
+            log('Loaded local chains:', chains.length);
             
             // Try to sync from GitHub in background
             try {
+                log('Attempting to fetch from GitHub...');
                 const githubData = await fetchFromGitHub();
-                log('Loaded chains from GitHub:', githubData);
+                log('Successfully loaded chains from GitHub:', githubData);
+                
+                if (!githubData || !githubData.chains) {
+                    log('Invalid GitHub data structure');
+                    throw new Error('Invalid data structure from GitHub');
+                }
                 
                 // Merge: prefer GitHub data but keep local-only chains
-                const githubChains = githubData.chains;
+                const githubChains = githubData.chains || [];
+                log('GitHub has', githubChains.length, 'chains');
+                log('Local has', chains.length, 'chains');
+                
                 const localOnlyChains = chains.filter(local => 
                     !githubChains.find(remote => remote.slug === local.slug)
                 );
+                log('Found', localOnlyChains.length, 'local-only chains');
                 
                 chains = [...githubChains, ...localOnlyChains];
+                log('After merge:', chains.length, 'total chains');
+                
                 saveChains();
                 
                 document.getElementById('last-sync-time').textContent = new Date().toLocaleTimeString();
+                updateSyncStatus('synced');
                 
             } catch (error) {
                 log('Could not sync from GitHub on init:', error);
+                log('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
                 updateSyncStatus('error');
+                
+                // Show user-friendly error message
+                if (error.message.includes('404')) {
+                    log('File does not exist in GitHub yet - this is normal for first use');
+                    document.getElementById('last-sync-time').textContent = 'No remote data yet';
+                } else {
+                    document.getElementById('last-sync-time').textContent = 'Sync failed';
+                }
             }
         }
 
