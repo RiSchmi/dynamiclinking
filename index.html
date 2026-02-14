@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A!SH Link Router</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --accent: #ec4899;
+            --dark: #0f172a;
+            --card: #1e293b;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--dark);
+            color: white;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, .brand {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Animated Background */
+        .bg-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-size: 200% 200%;
+            animation: gradient-shift 15s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--dark); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; 
+        }
+
+        /* Input Styling */
+        .input-field {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        /* QR Code Container */
+        #qrcode svg {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 12px;
+        }
+        
+        /* Color Picker Customization */
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            padding: 0;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0; 
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Lock Screen */
+        #lock-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: var(--dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div class="bg-mesh"></div>
+
+    <!-- Lock Screen -->
+    <div id="lock-screen">
+        <div class="glass p-8 rounded-2xl max-w-md w-full mx-4 text-center animate-slide-in">
+            <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-2xl font-bold">
+                A!
+            </div>
+            <h2 class="text-2xl font-bold mb-2">A!SH Router</h2>
+            <p class="text-slate-400 mb-6">Enter the access key to manage links</p>
+            
+            <div class="space-y-4">
+                <div class="text-left">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Security Question</label>
+                    <p class="text-sm text-slate-400 mb-2">When was A!SH founded? (yyyy)</p>
+                    <input type="password" id="password-input" class="input-field w-full px-4 py-3 rounded-xl text-white placeholder-slate-500" placeholder="Enter year...">
+                </div>
+                <button onclick="checkPassword()" class="btn-primary w-full py-3 rounded-xl font-semibold text-white">
+                    Unlock
+                </button>
+                <p id="error-msg" class="text-red-400 text-sm hidden">Incorrect answer. Try again.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden flex-1 flex flex-col">
+        <!-- Header -->
+        <header class="glass sticky top-0 z-40 border-b border-white/5">
+            <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center font-bold text-lg">
+                        A!
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight">Link Router</h1>
+                        <p class="text-xs text-slate-400">Dynamic QR Management</p>
+                    </div>
+                </div>
+                <button onclick="lock()" class="text-slate-400 hover:text-white transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="flex-1 max-w-6xl mx-auto w-full px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <!-- Left Column: Create -->
+            <div class="space-y-6">
+                <div class="glass-card rounded-2xl p-6 animate-slide-in">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm">+</span>
+                        Create New Chain
+                    </h2>
+                    
+                    <form id="create-form" class="space-y-4" onsubmit="handleCreate(event)">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Note / Purpose</label>
+                            <input type="text" id="note-input" required class="input-field w-full px-4 py-3 rounded-xl text-white" placeholder="e.g., Meeting Room A, Instagram Bio, etc." oninput="updateSlugPreview()">
+                            <p class="text-xs text-slate-500 mt-1">This generates your slug: <span id="slug-preview" class="text-indigo-400 font-mono">your-slug-here</span></p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300 mb-2">Target URL</label>
+                            <input type="url" id="url-input" required class="input-field w-full px-4 py-3 rounded-xl text-white" placeholder="https://example.com">
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            Create Link Chain
+                        </button>
+                    </form>
+                </div>
+
+                <!-- QR Preview Panel -->
+                <div id="qr-panel" class="glass-card rounded-2xl p-6 hidden animate-slide-in">
+                    <h2 class="text-lg font-semibold mb-4">QR Code Studio</h2>
+                    
+                    <div class="flex flex-col items-center gap-6">
+                        <div id="qrcode" class="w-48 h-48 bg-white rounded-xl p-2"></div>
+                        
+                        <div class="w-full space-y-4">
+                            <div class="flex items-center justify-between">
+                                <label class="text-sm text-slate-300">QR Color</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="color" id="qr-color" value="#000000" onchange="updateQRColor()">
+                                    <span id="color-hex" class="text-xs font-mono text-slate-400">#000000</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex gap-2">
+                                <button onclick="downloadQR()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Download SVG
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: List -->
+            <div class="space-y-6">
+                <div class="glass-card rounded-2xl p-6 min-h-[500px]">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold">Active Chains</h2>
+                        <span id="chain-count" class="text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300">0 chains</span>
+                    </div>
+
+                    <div id="chains-list" class="space-y-3">
+                        <!-- Chains injected here -->
+                        <div class="text-center text-slate-500 py-12">
+                            <p>No chains created yet.</p>
+                            <p class="text-sm mt-2">Create your first link chain on the left!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const STORAGE_KEY = 'aish_link_chains';
+        let chains = [];
+        let currentQRSlug = null;
+        let qrCodeObj = null;
+
+        // --- Password Protection ---
+        function checkPassword() {
+            const input = document.getElementById('password-input').value;
+            if (input === '2024') {
+                document.getElementById('lock-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('lock-screen').classList.add('hidden');
+                    document.getElementById('app').classList.remove('hidden');
+                    loadChains();
+                }, 300);
+            } else {
+                document.getElementById('error-msg').classList.remove('hidden');
+                document.getElementById('password-input').value = '';
+            }
+        }
+
+        function lock() {
+            location.reload();
+        }
+
+        // --- Slug Generation ---
+        function slugify(text) {
+            return text.toString().toLowerCase()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w\-]+/g, '')
+                .replace(/\-\-+/g, '-')
+                .replace(/^-+/, '')
+                .replace(/-+$/, '');
+        }
+
+        function updateSlugPreview() {
+            const note = document.getElementById('note-input').value;
+            const slug = slugify(note);
+            document.getElementById('slug-preview').textContent = slug || 'your-slug-here';
+        }
+
+        // --- Chain Management ---
+        function loadChains() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            chains = stored ? JSON.parse(stored) : [];
+            renderChains();
+        }
+
+        function saveChains() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
+            renderChains();
+        }
+
+        function handleCreate(e) {
+            e.preventDefault();
+            const note = document.getElementById('note-input').value;
+            const url = document.getElementById('url-input').value;
+            const slug = slugify(note);
+
+            // Check for duplicate slugs
+            if (chains.find(c => c.slug === slug)) {
+                alert('A chain with this name already exists! Please use a unique note.');
+                return;
+            }
+
+            const newChain = {
+                id: Date.now(),
+                slug,
+                note,
+                url,
+                created: new Date().toISOString(),
+                visits: 0
+            };
+
+            chains.push(newChain);
+            saveChains();
+
+            // Reset form
+            document.getElementById('create-form').reset();
+            updateSlugPreview();
+
+            // Show QR Panel
+            showQRPanel(slug);
+        }
+
+        function deleteChain(id) {
+            if (confirm('Delete this chain permanently?')) {
+                chains = chains.filter(c => c.id !== id);
+                saveChains();
+                document.getElementById('qr-panel').classList.add('hidden');
+            }
+        }
+
+        function updateChain(id) {
+            const chain = chains.find(c => c.id === id);
+            const newUrl = prompt('Enter new target URL:', chain.url);
+            if (newUrl && newUrl !== chain.url) {
+                chain.url = newUrl;
+                chain.updated = new Date().toISOString();
+                saveChains();
+                if (currentQRSlug === chain.slug) {
+                    showQRPanel(chain.slug); // Refresh QR
+                }
+            }
+        }
+
+        // --- Rendering ---
+        function renderChains() {
+            const container = document.getElementById('chains-list');
+            const count = document.getElementById('chain-count');
+            
+            count.textContent = `${chains.length} chain${chains.length !== 1 ? 's' : ''}`;
+
+            if (chains.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-slate-500 py-12 border-2 border-dashed border-slate-700 rounded-xl">
+                        <p class="text-lg mb-2">🎯</p>
+                        <p>No chains created yet.</p>
+                        <p class="text-sm mt-1 opacity-70">Create your first link chain!</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = chains.map(chain => `
+                <div class="glass-card rounded-xl p-4 flex flex-col gap-3 group animate-slide-in">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-mono bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">${chain.slug}</span>
+                                <span class="text-xs text-slate-500">${chain.visits} visits</span>
+                            </div>
+                            <h3 class="font-medium text-white">${chain.note}</h3>
+                            <p class="text-xs text-slate-400 truncate max-w-[200px] sm:max-w-xs">${chain.url}</p>
+                        </div>
+                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="showQRPanel('${chain.slug}')" class="p-2 hover:bg-slate-700 rounded-lg text-slate-300" title="Show QR">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                            </button>
+                            <button onclick="updateChain(${chain.id})" class="p-2 hover:bg-slate-700 rounded-lg text-slate-300" title="Edit URL">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
+                            <button onclick="deleteChain(${chain.id})" class="p-2 hover:bg-red-500/20 rounded-lg text-red-400" title="Delete">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-slate-500 bg-slate-800/50 p-2 rounded-lg">
+                        <span class="truncate flex-1 font-mono">${window.location.origin}${window.location.pathname}?id=${chain.slug}</span>
+                        <button onclick="copyLink('${chain.slug}')" class="text-indigo-400 hover:text-indigo-300 font-medium">Copy</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copyLink(slug) {
+            const url = `${window.location.origin}${window.location.pathname}?id=${slug}`;
+            navigator.clipboard.writeText(url);
+            // Visual feedback could be added here
+        }
+
+        // --- QR Code Studio ---
+        function showQRPanel(slug) {
+            currentQRSlug = slug;
+            const panel = document.getElementById('qr-panel');
+            panel.classList.remove('hidden');
+            
+            // Scroll to QR panel on mobile
+            if (window.innerWidth < 1024) {
+                panel.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            generateQR();
+        }
+
+        function generateQR() {
+            const container = document.getElementById('qrcode');
+            container.innerHTML = '';
+            
+            const url = `${window.location.origin}${window.location.pathname}?id=${currentQRSlug}`;
+            
+            // Using QRCode.js to generate SVG
+            qrCodeObj = new QRCode(container, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark : document.getElementById('qr-color').value,
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H,
+                useSVG: true
+            });
+        }
+
+        function updateQRColor() {
+            const color = document.getElementById('qr-color').value;
+            document.getElementById('color-hex').textContent = color;
+            generateQR(); // Regenerate with new color
+        }
+
+        function downloadQR() {
+            const svg = document.querySelector('#qrcode svg');
+            if (!svg) return;
+
+            // Get the SVG data
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            // Add white background for PNG export (optional, but good for compatibility)
+            // For true transparency, we'd need to modify the SVG rect fill
+            
+            img.onload = function() {
+                canvas.width = 1000;
+                canvas.height = 1000;
+                ctx.fillStyle = '#ffffff'; // Background
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Download as PNG (high res)
+                const pngFile = canvas.toDataURL('image/png');
+                const downloadLink = document.createElement('a');
+                downloadLink.download = `qr-${currentQRSlug}.png`;
+                downloadLink.href = pngFile;
+                downloadLink.click();
+            };
+            
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        }
+
+        // --- Redirect Logic ---
+        function handleRedirect() {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            
+            if (id) {
+                const chain = chains.find(c => c.slug === id);
+                if (chain) {
+                    // Increment visits
+                    chain.visits++;
+                    saveChains();
+                    
+                    // Instant redirect
+                    window.location.replace(chain.url);
+                } else {
+                    document.body.innerHTML = `
+                        <div class="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+                            <div class="text-center">
+                                <h1 class="text-2xl font-bold mb-2">Link Not Found</h1>
+                                <p class="text-slate-400">The chain "${id}" doesn't exist.</p>
+                                <a href="${window.location.pathname}" class="text-indigo-400 hover:underline mt-4 inline-block">Go to Manager</a>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // --- Initialization ---
+        window.onload = function() {
+            loadChains();
+            handleRedirect();
+            
+            // Enter key on password
+            document.getElementById('password-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') checkPassword();
+            });
+        };
+    </script>
+</body>
+</html>
