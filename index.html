@@ -6,7 +6,7 @@
     <title>A!FS Link Router</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -471,9 +471,14 @@
                 };
                 
                 // Add auth if token is configured (avoids rate limits and caching)
-                if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
+                if (GITHUB_TOKEN && GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE') {
                     headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
+                    console.log('Using GitHub token for authentication');
+                } else {
+                    console.warn('No GitHub token configured');
                 }
+                
+                console.log('Fetching from GitHub API...');
                 
                 // Add timestamp to force unique request
                 const response = await fetch(
@@ -484,27 +489,37 @@
                     }
                 );
                 
+                console.log('GitHub API response status:', response.status);
+                
                 if (response.ok) {
                     const fileData = await response.json();
                     // Decode base64 content
                     const content = atob(fileData.content);
                     const data = JSON.parse(content);
                     githubChains = data.chains || [];
+                    console.log('Loaded chains from GitHub:', githubChains.length);
                     
                     // Check if we have local changes
                     const stored = localStorage.getItem(STORAGE_KEY);
                     if (stored) {
                         chains = JSON.parse(stored);
+                        console.log('Using local chains:', chains.length);
                     } else {
                         // First load, use GitHub data
                         chains = [...githubChains];
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(chains));
+                        console.log('First load, syncing from GitHub');
                     }
-                } else {
+                } else if (response.status === 404) {
                     // chains.json doesn't exist yet - start fresh
+                    console.log('chains.json not found on GitHub, starting fresh');
                     githubChains = [];
                     const stored = localStorage.getItem(STORAGE_KEY);
                     chains = stored ? JSON.parse(stored) : [];
+                } else {
+                    const errorText = await response.text();
+                    console.error('GitHub API error:', response.status, errorText);
+                    throw new Error(`GitHub returned ${response.status}: ${errorText.substring(0, 100)}`);
                 }
             } catch (error) {
                 console.error('Error loading from GitHub:', error);
@@ -512,6 +527,16 @@
                 const stored = localStorage.getItem(STORAGE_KEY);
                 chains = stored ? JSON.parse(stored) : [];
                 githubChains = [];
+                
+                // Show error in status
+                statusEl.className = 'sync-badge';
+                statusEl.style.background = 'rgba(239, 68, 68, 0.1)';
+                statusEl.style.color = '#ef4444';
+                statusEl.style.border = '1px solid rgba(239, 68, 68, 0.2)';
+                statusEl.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-current"></div>
+                    <span>GitHub error (using local)</span>
+                `;
             }
 
             renderChains();
@@ -579,8 +604,12 @@
 
         // --- GitHub Sync Functions ---
         async function publishToGitHub() {
-            if (GITHUB_TOKEN === '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') {
-                alert('Please add your GitHub token to the GITHUB_TOKEN variable in the script.\n\nSee instructions at the top of the JavaScript section.');
+            console.log('Publishing to GitHub...');
+            console.log('Token configured:', GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE');
+            console.log('Token length:', GITHUB_TOKEN ? GITHUB_TOKEN.length : 0);
+            
+            if (!GITHUB_TOKEN || GITHUB_TOKEN === 'YOUR_GITHUB_TOKEN_HERE' || GITHUB_TOKEN.trim() === '') {
+                alert('GitHub token not configured. Please add your token to the script.');
                 return;
             }
 
@@ -592,6 +621,8 @@
             `;
 
             try {
+                console.log('Fetching current file SHA...');
+                
                 // Get current file SHA (needed for updates)
                 const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?_=${Date.now()}`, {
                     headers: {
@@ -601,10 +632,18 @@
                     }
                 });
 
+                console.log('Get SHA response:', getResponse.status);
+
                 let sha = null;
                 if (getResponse.ok) {
                     const fileData = await getResponse.json();
                     sha = fileData.sha;
+                    console.log('Got SHA:', sha);
+                } else if (getResponse.status === 404) {
+                    console.log('File does not exist yet, will create new');
+                } else {
+                    const errorData = await getResponse.text();
+                    console.error('Error getting SHA:', getResponse.status, errorData);
                 }
 
                 // Prepare the commit
@@ -626,6 +665,8 @@
                     commitData.sha = sha; // Include SHA for update
                 }
 
+                console.log('Committing to GitHub...');
+
                 // Commit to GitHub
                 const putResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}`, {
                     method: 'PUT',
@@ -637,8 +678,11 @@
                     body: JSON.stringify(commitData)
                 });
 
+                console.log('Commit response:', putResponse.status);
+
                 if (putResponse.ok) {
                     const result = await putResponse.json();
+                    console.log('Published successfully!', result.commit.sha);
                     
                     // Success! Update GitHub chains reference
                     githubChains = JSON.parse(JSON.stringify(chains)); // Deep copy
@@ -646,44 +690,16 @@
                     // Force update sync status
                     updateSyncStatus();
                     
-                    // Wait a moment for GitHub to propagate, then verify
-                    setTimeout(async () => {
-                        try {
-                            const verifyResponse = await fetch(
-                                `https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}?ref=${GITHUB_BRANCH}&_=${Date.now()}`,
-                                {
-                                    headers: {
-                                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                                        'Accept': 'application/vnd.github.v3+json',
-                                        'Cache-Control': 'no-cache'
-                                    },
-                                    cache: 'no-store'
-                                }
-                            );
-                            
-                            if (verifyResponse.ok) {
-                                const verifyData = await verifyResponse.json();
-                                const verifyContent = atob(verifyData.content);
-                                const verifyJson = JSON.parse(verifyContent);
-                                
-                                // Update our reference to what's actually on GitHub
-                                githubChains = verifyJson.chains || [];
-                                updateSyncStatus();
-                            }
-                        } catch (e) {
-                            console.log('Verification check failed, but publish succeeded:', e);
-                        }
-                    }, 1000);
-                    
                     alert('✅ Published to GitHub successfully!\n\nChanges are now live for everyone.');
                 } else {
-                    const error = await putResponse.json();
-                    throw new Error(error.message || 'Failed to commit to GitHub');
+                    const errorData = await putResponse.json();
+                    console.error('Commit error:', errorData);
+                    throw new Error(errorData.message || `HTTP ${putResponse.status}`);
                 }
 
             } catch (error) {
                 console.error('GitHub publish error:', error);
-                alert('❌ Failed to publish to GitHub:\n\n' + error.message + '\n\nYou can still use the Export button as a backup.');
+                alert('❌ Failed to publish to GitHub:\n\n' + error.message + '\n\nCheck the browser console for details.');
                 updateSyncStatus();
             }
         }
@@ -725,7 +741,7 @@
                     'Pragma': 'no-cache'
                 };
                 
-                if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
+                if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
                     headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
                 }
                 
@@ -823,74 +839,39 @@
             generateQR();
         }
 
-        function generateQR() {
+        async function generateQR() {
             const container = document.getElementById('qrcode');
-            container.innerHTML = '';
+            container.innerHTML = '<div class="flex items-center justify-center h-48"><span class="text-slate-400">Generating...</span></div>';
             
             const url = `${window.location.origin}${window.location.pathname}?id=${currentQRSlug}`;
             const color = document.getElementById('qr-color').value;
             
-            // Create QR code with canvas first
-            qrCodeObj = new QRCode(container, {
-                text: url,
-                width: 200,
-                height: 200,
-                colorDark: color,
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            // Wait for QR to be generated, then convert canvas to SVG
-            setTimeout(() => {
-                const canvas = container.querySelector('canvas');
-                if (canvas) {
-                    // Get canvas data
-                    const ctx = canvas.getContext('2d');
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const size = canvas.width;
-                    
-                    // Create SVG
-                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('width', size);
-                    svg.setAttribute('height', size);
-                    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+            try {
+                // Generate SVG string using QRCode library
+                const svgString = await QRCode.toString(url, {
+                    type: 'svg',
+                    color: {
+                        dark: color,
+                        light: '#ffffff'
+                    },
+                    errorCorrectionLevel: 'H',
+                    margin: 1,
+                    width: 200
+                });
+                
+                container.innerHTML = svgString;
+                
+                // Style the SVG
+                const svg = container.querySelector('svg');
+                if (svg) {
                     svg.style.width = '100%';
                     svg.style.height = '100%';
-                    
-                    // Add white background
-                    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    bg.setAttribute('width', size);
-                    bg.setAttribute('height', size);
-                    bg.setAttribute('fill', '#ffffff');
-                    svg.appendChild(bg);
-                    
-                    // Convert pixels to SVG rects
-                    const pixelSize = 1;
-                    for (let y = 0; y < size; y++) {
-                        for (let x = 0; x < size; x++) {
-                            const index = (y * size + x) * 4;
-                            const r = imageData.data[index];
-                            const g = imageData.data[index + 1];
-                            const b = imageData.data[index + 2];
-                            
-                            // If pixel is dark (QR module)
-                            if (r + g + b < 384) {  // Not white
-                                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                                rect.setAttribute('x', x);
-                                rect.setAttribute('y', y);
-                                rect.setAttribute('width', pixelSize);
-                                rect.setAttribute('height', pixelSize);
-                                rect.setAttribute('fill', color);
-                                svg.appendChild(rect);
-                            }
-                        }
-                    }
-                    
-                    // Replace canvas with SVG
-                    container.innerHTML = '';
-                    container.appendChild(svg);
+                    svg.style.borderRadius = '12px';
                 }
-            }, 100);
+            } catch (error) {
+                console.error('QR generation error:', error);
+                container.innerHTML = '<div class="text-red-400 text-sm p-4">Failed to generate QR code</div>';
+            }
         }
 
         function updateQRColor() {
@@ -985,7 +966,7 @@
                     };
                     
                     // Use token for faster/uncached access
-                    if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
+                    if (GITHUB_TOKEN && GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE') {
                         headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
                     }
                     
