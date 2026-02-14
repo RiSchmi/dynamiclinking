@@ -4,12 +4,19 @@
       "id": 1771088105258,
       "slug": "karrot_page",
       "note": "karrot_page",
-      "url": "https://www.bahn.de/buchung/fahrplan/suche#sts=true&so=Berlin%20Hbf&zo=Bad%20Langensalza&kl=2&r=9:16:KLASSENLOS:1&soid=A%3D1%40O%3DBerlin%20Hbf%40X%3D13369549%40Y%3D52525589%40U%3D80%40L%3D8011160%40p%3D1770833783%40i%3DU%C3%97008065969%40&zoid=A%3D1%40O%3DBad%20Langensalza%40X%3D10640675%40Y%3D51101698%40U%3D80%40L%3D8010020%40p%3D1770833783%40i%3DU%C3%97008016578%40&sot=ST&zot=ST&soei=8011160&zoei=8010020&hd=2026-05-07T11:11:29&hza=D&hz=%5B%5D&ar=false&s=true&d=false&vm=00,01,02,03,04,05,06,07,08,09&fm=false&bp=true&dlt=false&dltv=false",
+      "url": "https://karrot.world/#/welcome",
       "created": "2026-02-14T16:55:05.258Z",
-      "visits": 0,
-      "updated": "2026-02-14T16:58:36.870Z"
+      "visits": 0
+    },
+    {
+      "id": 1771088615494,
+      "slug": "anthro",
+      "note": "anthro",
+      "url": "https://www.anthropic.com/",
+      "created": "2026-02-14T17:03:35.494Z",
+      "visits": 0
     }
   ],
-  "exported": "2026-02-14T16:58:43.525Z",
+  "exported": "2026-02-14T17:03:37.870Z",
   "version": "1.0"
 }
