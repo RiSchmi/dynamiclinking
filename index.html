@@ -238,7 +238,7 @@
                 A!
             </div>
             <h2 class="text-2xl font-bold mb-2">A!FS Router</h2>
-            <p class="text-slate-400 mb-6">Enter the access key to manage links</p>
+            <p class="text-slate-400 mb-6">Dynamic QR Code Management System</p>
             
             <div class="space-y-4">
                 <div class="text-left">
@@ -250,6 +250,11 @@
                     Unlock
                 </button>
                 <p id="error-msg" class="text-red-400 text-sm hidden">Incorrect answer. Try again.</p>
+                
+                <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400">
+                    <p class="font-medium text-slate-300 mb-1">ℹ️ What is this?</p>
+                    <p>Create dynamic links with updatable QR codes. Perfect for posters, business cards, and physical signs where you need to change the destination without reprinting.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -269,11 +274,11 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <div id="sync-status" class="sync-badge sync-loading">
+                    <div id="sync-status" class="sync-badge sync-loading" title="Shows if you have unpublished changes. Yellow = unsaved, Green = all published">
                         <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
                         <span>Loading...</span>
                     </div>
-                    <button onclick="lock()" class="text-slate-400 hover:text-white transition-colors">
+                    <button onclick="lock()" class="text-slate-400 hover:text-white transition-colors" title="Lock and return to login screen">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     </button>
                 </div>
@@ -291,6 +296,11 @@
                         Create New Chain
                     </h2>
                     
+                    <div class="mb-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-xs text-indigo-200">
+                        <p class="font-medium mb-1">💡 How it works:</p>
+                        <p>A "chain" is a short link that redirects to any URL. You can update the destination anytime without changing the QR code!</p>
+                    </div>
+                    
                     <form id="create-form" class="space-y-4" onsubmit="handleCreate(event)">
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Note / Purpose</label>
@@ -301,6 +311,7 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Target URL</label>
                             <input type="url" id="url-input" required class="input-field w-full px-4 py-3 rounded-xl text-white" placeholder="https://example.com">
+                            <p class="text-xs text-slate-500 mt-1">Where should this link redirect to? You can change this later.</p>
                         </div>
 
                         <button type="submit" class="btn-primary w-full py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2">
@@ -316,39 +327,44 @@
                         <span class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                         </span>
-                        GitHub Sync
+                        Publish Changes
                     </h2>
                     
+                    <div class="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs text-purple-200">
+                        <p class="font-medium mb-1">📤 Important:</p>
+                        <p>Your changes are only saved locally until you publish them. After publishing, all QR codes update worldwide in ~1-2 minutes.</p>
+                    </div>
+                    
                     <div class="space-y-3">
-                        <p class="text-sm text-slate-400">Publish your changes to GitHub to make them live for everyone instantly.</p>
-                        
                         <button onclick="publishToGitHub()" class="btn-primary w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                             Publish to GitHub
                         </button>
+                        <p class="text-xs text-slate-500 text-center">Make changes live for everyone</p>
 
                         <div class="flex gap-2">
-                            <button onclick="exportChains()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                            <button onclick="exportChains()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2" title="Download chains.json backup file">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                Export JSON
+                                Export
                             </button>
 
-                            <button onclick="reloadFromGitHub()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                            <button onclick="reloadFromGitHub()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2" title="Discard local changes and reload from GitHub">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                                 Reload
                             </button>
                         </div>
-
-                        <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400">
-                            <p class="font-medium text-slate-300 mb-1">💡 First time setup:</p>
-                            <p>Add your GitHub token to the script to enable auto-publish.</p>
-                        </div>
+                        <p class="text-xs text-slate-500 text-center">Export = backup file • Reload = discard changes</p>
                     </div>
                 </div>
 
                 <!-- QR Preview Panel -->
                 <div id="qr-panel" class="glass-card rounded-2xl p-6 hidden animate-slide-in">
                     <h2 class="text-lg font-semibold mb-4">QR Code Studio</h2>
+                    
+                    <div class="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-200">
+                        <p class="font-medium mb-1">🎨 Customize & Download:</p>
+                        <p>This QR code will always redirect to your latest URL. Print it once, update the destination anytime!</p>
+                    </div>
                     
                     <div class="flex flex-col items-center gap-6">
                         <div id="qrcode" class="w-48 h-48 bg-white rounded-xl p-2"></div>
@@ -357,21 +373,22 @@
                             <div class="flex items-center justify-between">
                                 <label class="text-sm text-slate-300">QR Color</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="color" id="qr-color" value="#000000" onchange="updateQRColor()">
+                                    <input type="color" id="qr-color" value="#000000" onchange="updateQRColor()" title="Choose QR code color">
                                     <span id="color-hex" class="text-xs font-mono text-slate-400">#000000</span>
                                 </div>
                             </div>
                             
                             <div class="flex gap-2">
-                                <button onclick="downloadQR('png')" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                <button onclick="downloadQR('png')" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2" title="Download as high-resolution PNG (1000x1000px) - best for printing">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                     PNG
                                 </button>
-                                <button onclick="downloadQR('svg')" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                <button onclick="downloadQR('svg')" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2" title="Download as vector SVG - scales to any size without quality loss">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                     SVG
                                 </button>
                             </div>
+                            <p class="text-xs text-slate-500 text-center">PNG = print ready • SVG = infinite scaling</p>
                         </div>
                     </div>
                 </div>
@@ -380,9 +397,14 @@
             <!-- Right Column: List -->
             <div class="space-y-6">
                 <div class="glass-card rounded-2xl p-6 min-h-[500px]">
-                    <div class="flex justify-between items-center mb-6">
+                    <div class="flex justify-between items-center mb-4">
                         <h2 class="text-lg font-semibold">Active Chains</h2>
                         <span id="chain-count" class="text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300">0 chains</span>
+                    </div>
+                    
+                    <div class="mb-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400">
+                        <p class="font-medium text-slate-300 mb-1">🔗 Your Dynamic Links:</p>
+                        <p>Hover over a chain to see options: <span class="text-indigo-400">QR</span> = generate QR code • <span class="text-indigo-400">Edit</span> = change URL • <span class="text-indigo-400">Delete</span> = remove</p>
                     </div>
 
                     <div id="chains-list" class="space-y-3">
