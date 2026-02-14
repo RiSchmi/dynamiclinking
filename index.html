@@ -378,7 +378,7 @@
         // GitHub Personal Access Token (fine-grained, write access to dynamiclinking repo only)
         // To create: GitHub Settings > Developer Settings > Personal Access Tokens > Fine-grained tokens
         // Permissions needed: Contents (Read and write) for RiSchmi/dynamiclinking repository
-        const GITHUB_TOKEN = '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';
+        const GITHUB_TOKEN = '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';
         
         const STORAGE_KEY = 'aifs_link_chains';
         
@@ -471,7 +471,7 @@
                 };
                 
                 // Add auth if token is configured (avoids rate limits and caching)
-                if (GITHUB_TOKEN && GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE') {
+                if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
                     headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
                     console.log('Using GitHub token for authentication');
                 } else {
@@ -605,10 +605,10 @@
         // --- GitHub Sync Functions ---
         async function publishToGitHub() {
             console.log('Publishing to GitHub...');
-            console.log('Token configured:', GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE');
+            console.log('Token configured:', GITHUB_TOKEN !== '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');
             console.log('Token length:', GITHUB_TOKEN ? GITHUB_TOKEN.length : 0);
             
-            if (!GITHUB_TOKEN || GITHUB_TOKEN === 'YOUR_GITHUB_TOKEN_HERE' || GITHUB_TOKEN.trim() === '') {
+            if (!GITHUB_TOKEN || GITHUB_TOKEN === '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' || GITHUB_TOKEN.trim() === '') {
                 alert('GitHub token not configured. Please add your token to the script.');
                 return;
             }
