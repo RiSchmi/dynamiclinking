@@ -471,7 +471,7 @@
                 };
                 
                 // Add auth if token is configured (avoids rate limits and caching)
-                if (GITHUB_TOKEN && GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE') {
+                if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
                     headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
                 }
                 
@@ -579,7 +579,7 @@
 
         // --- GitHub Sync Functions ---
         async function publishToGitHub() {
-            if (GITHUB_TOKEN === 'YOUR_GITHUB_TOKEN_HERE') {
+            if (GITHUB_TOKEN === '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') {
                 alert('Please add your GitHub token to the GITHUB_TOKEN variable in the script.\n\nSee instructions at the top of the JavaScript section.');
                 return;
             }
@@ -725,7 +725,7 @@
                     'Pragma': 'no-cache'
                 };
                 
-                if (GITHUB_TOKEN && GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE') {
+                if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
                     headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
                 }
                 
@@ -985,7 +985,7 @@
                     };
                     
                     // Use token for faster/uncached access
-                    if (GITHUB_TOKEN && GITHUB_TOKEN !== 'YOUR_GITHUB_TOKEN_HERE') {
+                    if (GITHUB_TOKEN && GITHUB_TOKEN !== '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') {
                         headers['Authorization'] = `Bearer ${GITHUB_TOKEN}`;
                     }
                     
