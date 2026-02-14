@@ -289,23 +289,35 @@
                 <div class="glass-card rounded-2xl p-6 animate-slide-in">
                     <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-sm">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                         </span>
                         GitHub Sync
                     </h2>
                     
                     <div class="space-y-3">
-                        <p class="text-sm text-slate-400">Export your changes and commit <code class="bg-slate-800 px-2 py-0.5 rounded text-xs">chains.json</code> to GitHub to make them live for everyone.</p>
+                        <p class="text-sm text-slate-400">Publish your changes to GitHub to make them live for everyone instantly.</p>
                         
-                        <button onclick="exportChains()" class="w-full bg-slate-700 hover:bg-slate-600 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                            Export chains.json
+                        <button onclick="publishToGitHub()" class="btn-primary w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            Publish to GitHub
                         </button>
 
-                        <button onclick="reloadFromGitHub()" class="w-full bg-slate-800 hover:bg-slate-700 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                            Reload from GitHub
-                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="exportChains()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                Export JSON
+                            </button>
+
+                            <button onclick="reloadFromGitHub()" class="flex-1 bg-slate-700 hover:bg-slate-600 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                Reload
+                            </button>
+                        </div>
+
+                        <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400">
+                            <p class="font-medium text-slate-300 mb-1">💡 First time setup:</p>
+                            <p>Add your GitHub token to the script to enable auto-publish.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -362,6 +374,11 @@
         const GITHUB_BRANCH = 'main';
         const CHAINS_FILE = 'chains.json';
         const GITHUB_RAW_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${CHAINS_FILE}`;
+        
+        // GitHub Personal Access Token (fine-grained, write access to dynamiclinking repo only)
+        // To create: GitHub Settings > Developer Settings > Personal Access Tokens > Fine-grained tokens
+        // Permissions needed: Contents (Read and write) for RiSchmi/dynamiclinking repository
+        const GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN_HERE'; // Replace this with your actual token
         
         const STORAGE_KEY = 'aish_link_chains';
         
@@ -540,6 +557,81 @@
         }
 
         // --- GitHub Sync Functions ---
+        async function publishToGitHub() {
+            if (GITHUB_TOKEN === 'YOUR_GITHUB_TOKEN_HERE') {
+                alert('Please add your GitHub token to the GITHUB_TOKEN variable in the script.\n\nSee instructions at the top of the JavaScript section.');
+                return;
+            }
+
+            const statusEl = document.getElementById('sync-status');
+            statusEl.className = 'sync-badge sync-loading';
+            statusEl.innerHTML = `
+                <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+                <span>Publishing...</span>
+            `;
+
+            try {
+                // Get current file SHA (needed for updates)
+                const getResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}`, {
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                let sha = null;
+                if (getResponse.ok) {
+                    const fileData = await getResponse.json();
+                    sha = fileData.sha;
+                }
+
+                // Prepare the commit
+                const data = {
+                    chains: chains,
+                    exported: new Date().toISOString(),
+                    version: "1.0"
+                };
+
+                const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+
+                const commitData = {
+                    message: `Update chains - ${new Date().toLocaleString()}`,
+                    content: content,
+                    branch: GITHUB_BRANCH
+                };
+
+                if (sha) {
+                    commitData.sha = sha; // Include SHA for update
+                }
+
+                // Commit to GitHub
+                const putResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${CHAINS_FILE}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(commitData)
+                });
+
+                if (putResponse.ok) {
+                    // Success! Update GitHub chains reference
+                    githubChains = [...chains];
+                    updateSyncStatus();
+                    alert('✅ Published to GitHub successfully!\n\nChanges are now live for everyone.');
+                } else {
+                    const error = await putResponse.json();
+                    throw new Error(error.message || 'Failed to commit to GitHub');
+                }
+
+            } catch (error) {
+                console.error('GitHub publish error:', error);
+                alert('❌ Failed to publish to GitHub:\n\n' + error.message + '\n\nYou can still use the Export button as a backup.');
+                updateSyncStatus();
+            }
+        }
+
         function exportChains() {
             const data = {
                 chains: chains,
