@@ -253,7 +253,7 @@
                 
                 <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400">
                     <p class="font-medium text-slate-300 mb-1">ℹ️ What is this?</p>
-                    <p>Create dynamic links with updatable QR codes. Perfect for posters, business cards, and physical signs where you need to change the destination without reprinting.</p>
+                    <p>Create dynamic links with updatable QR codes. Perfect for evetnt or sign up posters where you need to change the destination without reprinting.</p>
                 </div>
             </div>
         </div>
@@ -298,14 +298,14 @@
                     
                     <div class="mb-4 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-xs text-indigo-200">
                         <p class="font-medium mb-1">💡 How it works:</p>
-                        <p>A "chain" is a short link that redirects to any URL. You can update the destination anytime without changing the QR code!</p>
+                        <p>A "chain" is a short link that redirects to any URL. You can update the destination (target url) anytime without changing the QR code!</p>
                     </div>
                     
                     <form id="create-form" class="space-y-4" onsubmit="handleCreate(event)">
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Note / Purpose</label>
                             <input type="text" id="note-input" required class="input-field w-full px-4 py-3 rounded-xl text-white" placeholder="e.g., Meeting Room A, Instagram Bio, etc." oninput="updateSlugPreview()">
-                            <p class="text-xs text-slate-500 mt-1">This generates your slug: <span id="slug-preview" class="text-indigo-400 font-mono">your-slug-here</span></p>
+                            <p class="text-xs text-slate-500 mt-1">This generates your slug: "https://rischmi.github.io/dynamiclinking/?id=<span id="slug-preview" class="text-indigo-400 font-mono">your-slug-here</span>"</p>
                         </div>
                         
                         <div>
